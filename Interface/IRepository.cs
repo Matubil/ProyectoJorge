@@ -13,7 +13,12 @@ namespace DapperApi2022.Interface
         public Task<List<int>> GetMatriculasDeudor();
         public Task<List<int>> GetAllPeriodos(int matricula);
         public Task<List<DeudorDto>> GetlAllConceptosPeriodo(int matricula, int periodo);
-        
+        public Task<List<int>> GetMatriculas();
+        public Task<int> CountConceptosPagosPorPeriodo(int matricula, int periodo);
+
+
+
+
 
     }
 }

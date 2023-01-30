@@ -85,18 +85,38 @@ namespace DapperApi2022.Repositorio
                     $@"SELECT DISTINCT ap.dmatricula
                             FROM APORTE_DEUDAS ap 
                             INNER JOIN AFILIA a ON ap.dmatricula = a.Matricula
-                            INNER JOIN (SELECT dmatricula, MIN(CAST(dperiodo AS INT)) as dperiodo_min,
-                             MAX(CAST(dperiodo AS INT)) as dperiodo_max FROM APORTE_DEUDAS
-                            GROUP BY dmatricula) agrupado ON ap.dmatricula = agrupado.dmatricula 
                             WHERE a.Baja = 'N' AND a.Tipo = 'A' 
-                            AND ap.dorden = 99999999";
-
+                            AND ap.dorden = 99999999 AND ap.dperiodo < '202212'";
+                /* juntar APORTE_DEUDAS con APORTE_LIQUIDACION
+                  AND ap.dperiodo < '202212' AND dexcepcion = 0 y 3, 3 es deuda prescripta */
                 var resultado = await conexion.QueryAsync<int>(sql);
 
                 return resultado.ToList();
             }
         }
         #endregion
+
+        #region GetMatriculasDeudor USAR CON LA VERSION 2 DE JORGE
+        public async Task<List<int>> GetMatriculas()
+        {
+            using (var conexion = _context.CreateConnection())
+            {
+                var sql =
+                    $@"SELECT DISTINCT lqmatricula 
+                            FROM APORTE_LIQUIDACION 
+                                WHERE lqperiodo = '202212' AND lqdetalle = NULL";
+                var resultado = await conexion.QueryAsync<int>(sql);
+
+                return resultado.ToList();
+            }
+        }
+        #endregion
+
+        /*SELECT DISTINCT ap.dmatricula 
+                            FROM APORTE_DEUDAS ap 
+                                INNER JOIN APORTE_LIQUIDACION al ON ap.dmatricula = al.lqmatricula
+                                    WHERE ap.dorden = 99999999 AND al.lqperiodo = '202212' 
+                                            AND (ap.dexcepcion = 0 OR ap.dexcepcion = 3) AND al.lqdetalle = NULL*/
 
         #region GetAllPeriodos
         public async Task<List<int>> GetAllPeriodos(int matricula)
@@ -106,7 +126,7 @@ namespace DapperApi2022.Repositorio
                 var sql =
                     $@"SELECT DISTINCT(dperiodo) 
                             FROM APORTE_DEUDAS 
-                                WHERE dmatricula= {matricula}";
+                                WHERE dmatricula= {matricula} AND dorden = 99999999";
 
                 var resultado = await conexion.QueryAsync<int>(sql);
 
@@ -124,10 +144,26 @@ namespace DapperApi2022.Repositorio
                     $@"SELECT dconcepto, dorden
                             FROM APORTE_DEUDAS 
                                 WHERE dmatricula = {matricula} AND dperiodo = '{periodo}'";
-
+                /*anotar un count de dorden pago*/
                 var resultado = await conexion.QueryAsync<DeudorDto>(sql);
 
                 return resultado.ToList();
+            }
+        }
+        #endregion
+
+        #region GetlAllConceptosPeriodo  USAR CON LA VERSION 2 DE JORGE
+        public async Task<int> CountConceptosPagosPorPeriodo(int matricula, int periodo)
+        {
+            using (var conexion = _context.CreateConnection())
+            {
+                var sql =
+                    $@"SELECT COUNT(dconcepto) 
+                            FROM APORTE_DEUDAS 
+                                WHERE dmatricula = {matricula} AND dperiodo = '{periodo}'  AND dorden != 99999999";
+                var resultado = await conexion.ExecuteScalarAsync<int>(sql);
+
+                return resultado;
             }
         }
         #endregion

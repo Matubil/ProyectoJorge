@@ -120,7 +120,7 @@ namespace DapperApi2022.Controllers
                     while ((cantPeriodosImp < 13) && (periodoActual < 202212))
                     {
                         var listaConceptos = await _companyRepo.GetlAllConceptosPeriodo(matriculaActual, periodoActual);
-                        // Tu codigo para iterar
+
                         cantConceptos = 0;
                         conceptosImpagos = 0;
                         foreach (var conceptoActual in listaConceptos)
@@ -150,6 +150,64 @@ namespace DapperApi2022.Controllers
                 {
                     MatriculasDeDeudores = listaMatriculasDeDeudores,
                     CantidadDeDeudores = cantDeudores
+                };
+                return Ok(resultado);
+
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+        #endregion
+
+        #region calcularDeudores2.0
+        [HttpGet("GetCantDeudoresJorgeVersion2")]
+        public async Task<IActionResult> getAfiliadosDeudores()
+        {
+            try
+            {
+                var listaMatriculas = await _companyRepo.GetMatriculas(); ;
+                int cantPeriodosImp;
+                int indicePeriodo;
+                int periodoActual;
+                int cantConceptos;
+                int conceptosImpagos;
+                int cantDeudores = 0;
+                var listaMatriculasDeDeudores = new List<int>();
+                foreach (var matriculaActual in listaMatriculas)
+                {
+                    cantPeriodosImp = 0;
+                    indicePeriodo = 0;
+                    var listaPeriodo = await _companyRepo.GetAllPeriodos(matriculaActual);
+                    if (listaPeriodo.Count() > 0)
+                    {
+                        listaPeriodo = listaPeriodo.Select(x => Convert.ToInt32(x)).ToList();
+                        periodoActual = listaPeriodo[indicePeriodo];
+                        int cantConceptosPagos = 0;
+                        while ((cantPeriodosImp < 13) && (periodoActual < 202212) && (indicePeriodo < listaPeriodo.Count() - 1))
+                        {
+                            cantConceptosPagos = await _companyRepo.CountConceptosPagosPorPeriodo(matriculaActual, periodoActual);
+
+                            if (cantConceptosPagos == 0)
+                            {
+                                cantPeriodosImp++;
+                            }
+                            indicePeriodo++;
+                            periodoActual = listaPeriodo[indicePeriodo];
+                        }
+                        if ((0 < cantPeriodosImp) && (cantPeriodosImp <= 12))
+                        {
+                            cantDeudores++;
+                            listaMatriculasDeDeudores.Add(matriculaActual);
+                        }
+                    }
+                }
+                var resultado = new ResultadoDeudores
+                {
+                    CantidadDeDeudores = cantDeudores,
+                    MatriculasDeDeudores = listaMatriculasDeDeudores
                 };
                 return Ok(resultado);
 
